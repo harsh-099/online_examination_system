@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+{% load widget_tweaks %}
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <style>
+        form{
+           margin: 50px; 
+        }
+        #video, #canvas {
+          border: 1px solid #ccc;
+          margin-top: 10px;
+        }
+        small.text-danger {
+          font-size: 0.85em;
+        }
+    </style>
+  </head>
+  <body>
+    {% include "exam/navbar.html" %}
+
+<br><br><br>
+
+<div class="container">
+  <h3 style="text-align: center;">Student Signup Form</h3>
+
+<form method="POST" autocomplete="off" enctype="multipart/form-data" onsubmit="return validatePasswords()">
+    {% csrf_token %}
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="first_name">First Name</label>
+          {% render_field userForm.first_name|attr:'required:true' class="form-control form-control-sm rounded-0" placeholder="First Name" %}
+          {% for error in userForm.first_name.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+        <div class="form-group col-md-6">
+          <label for="last_name">Last Name</label>
+          {% render_field userForm.last_name|attr:'required:true' class="form-control form-control-sm rounded-0" placeholder="Last Name" %}
+          {% for error in userForm.last_name.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="mobile">Contact</label>
+          {% render_field studentForm.mobile|attr:'required:true'|attr:'pattern:^\\d{10}$'|attr:'title:Enter 10 digit mobile number' class="form-control form-control-sm rounded-0" placeholder="Contact Number" %}
+          {% for error in studentForm.mobile.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+        <div class="form-group col-md-6">
+          <label for="address">Address</label>
+          {% render_field studentForm.address|attr:'required:true' class="form-control form-control-sm rounded-0" placeholder="Address" %}
+          {% for error in studentForm.address.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="username">Username</label>
+          {% render_field userForm.username|attr:'required:true'|attr:'title:Username must be unique' class="form-control form-control-sm rounded-0" placeholder="username" %}
+          {% for error in userForm.username.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+        <div class="form-group col-md-6">
+          <label for="inputPassword4">Password</label>
+          {% render_field userForm.password|attr:'required:true' id="password" class="form-control form-control-sm rounded-0" placeholder="password" %}
+          {% for error in userForm.password.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="confirm_password">Confirm Password</label>
+          {% render_field userForm.confirm_password|attr:'required:true' id="confirm_password" class="form-control form-control-sm rounded-0" placeholder="Confirm Password" %}
+          {% for error in userForm.confirm_password.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-12">
+          <label for="profile_pic">Profile Picture (Upload)</label>
+          {% render_field studentForm.profile_pic class="form-control form-control-sm rounded-0" %}
+          {% for error in studentForm.profile_pic.errors %}
+              <small class="text-danger">{{ error }}</small>
+          {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-12">
+          <label>Or Capture Photo</label><br>
+          <video id="video" width="200" height="150" autoplay></video><br>
+          <button type="button" id="captureBtn" class="btn btn-secondary btn-sm mt-2">📸 Capture</button>
+          <canvas id="canvas" width="200" height="150" style="display:none;"></canvas>
+          <input type="hidden" name="captured_image" id="captured_image">
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg rounded-0">Sign Up</button>
+  </form>
+</div>
+
+<script>
+    function validatePasswords() {
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirm_password").value;
+
+        if (password !== confirmPassword) {
+            alert("Password and Confirm Password do not match!");
+            return false;
+        }
+        return true;
+    }
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const capturedInput = document.getElementById('captured_image');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => { console.error("Camera not accessible:", err); });
+
+    captureBtn.addEventListener('click', () => {
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = "block";
+        const dataURL = canvas.toDataURL("image/png");
+        capturedInput.value = dataURL;
+    });
+</script>
+
+<br>
+{% include "exam/footer.html" %}
+  </body>
+</html>

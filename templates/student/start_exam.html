@@ -1,0 +1,81 @@
+{% extends 'student/studentbase.html' %} 
+{% block content %} 
+{% load static %}
+
+<head>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+</head>
+
+<div class="jumbotron my-4" style="display:flex; justify-content:space-between;">
+
+    <!-- LEFT SIDE: Questions -->
+    <div style="width:70%;">
+        <form class="form" autocomplete="off" onsubmit="return saveAns()" 
+              action="{% url 'student_save_next' course.id current_question.id %}" 
+              method="POST">
+            {% csrf_token %}
+            <h2 style="text-align: center;">Course: {{course.course_name}}</h2>
+
+            <div class="d-flex w-100 align-items-center">
+                <div class="col-auto flex-shrink-1 flex-grow-1">
+                    <h3 class="">{{ current_no }}. {{current_question.question}}</h3>
+                </div>
+                <div class="col-auto">
+                    <h4 style="text-align: right;">[{{current_question.marks}} Marks]</h4>
+                </div>
+            </div>
+
+            <div class="form-check mx-4 d-flex align-items-center">
+                <input class="form-check-input" type="radio" 
+                       name="answer" value="Option1"
+                       {% if saved_answer == "Option1" %}checked{% endif %}>
+                <label class="form-check-label ml-3">{{current_question.option1}}</label>
+            </div>
+
+            <div class="form-check mx-4 d-flex align-items-center">
+                <input class="form-check-input" type="radio" 
+                       name="answer" value="Option2"
+                       {% if saved_answer == "Option2" %}checked{% endif %}>
+                <label class="form-check-label ml-3">{{current_question.option2}}</label>
+            </div>
+
+            <div class="form-check mx-4 d-flex align-items-center">
+                <input class="form-check-input" type="radio" 
+                       name="answer" value="Option3"
+                       {% if saved_answer == "Option3" %}checked{% endif %}>
+                <label class="form-check-label ml-3">{{current_question.option3}}</label>
+            </div>
+
+            <div class="form-check mx-4 d-flex align-items-center">
+                <input class="form-check-input" type="radio" 
+                       name="answer" value="Option4"
+                       {% if saved_answer == "Option4" %}checked{% endif %}>
+                <label class="form-check-label ml-3">{{current_question.option4}}</label>
+            </div>
+
+            <br>
+            <input class="btn btn-success btn-lg" style="border-radius: 0%;" type="submit" name="action" value="Save & Next">
+            <input class="btn btn-primary btn-lg" style="border-radius: 0%;" type="submit" name="action" value="Submit Answers">
+        </form>
+    </div>
+
+    <!-- RIGHT SIDE: Question Panel -->
+    <div style="width:25%; border:1px solid gray; padding:10px; border-radius:8px;">
+        <h4>Questions</h4>
+        {% for q in questions %}
+            {% if q.id in attempted_questions %}
+                <button style="background:green; color:white; margin:5px; width:40px; height:40px; border-radius:50%;">
+                    {{ forloop.counter }}
+                </button>
+            {% else %}
+                <button style="background:lightgray; margin:5px; width:40px; height:40px; border-radius:50%;">
+                    {{ forloop.counter }}
+                </button>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock content %}
