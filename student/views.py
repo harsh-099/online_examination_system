@@ -81,135 +81,44 @@ def take_exam_view(request,pk):
         total_marks=total_marks + q.marks
     
     return render(request,'student/take_exam.html',{'course':course,'total_questions':total_questions,'total_marks':total_marks})
+
 @login_required(login_url='studentlogin')
 @user_passes_test(is_student)
-def start_exam_view(request, pk):
-
-    course = QMODEL.Course.objects.get(id=pk)
-
-    questions = list(
-        QMODEL.Question.objects.filter(course=course)
-    )
-
-    if not questions:
-        return render(
-            request,
-            'student/start_exam.html',
-            {
-                'course': course,
-                'questions': questions,
-                'message': 'No questions available for this exam.'
-            }
-        )
-
-    # Get current question from cookie
-    current_question_id = request.COOKIES.get('current_question')
-
-    current_question = None
-
-    if current_question_id:
-        try:
-            current_question = QMODEL.Question.objects.get(
-                id=current_question_id,
-                course=course
-            )
-        except QMODEL.Question.DoesNotExist:
-            current_question = None
-
-    # First question
-    if current_question is None:
-        current_question = questions[0]
-
-    # Current question number
-    current_no = 1
-
-    for index, question in enumerate(questions):
-        if question.id == current_question.id:
-            current_no = index + 1
-            break
-
-    # Saved answer
-    saved_answer = request.COOKIES.get(
-        str(current_question.id)
-    )
-
-    # Attempted questions
-    attempted_cookie = request.COOKIES.get(
-        'attempted_questions',
-        ''
-    )
-
-    attempted_questions = []
-
-    if attempted_cookie:
-        attempted_questions = [
-            int(x)
-            for x in attempted_cookie.split(',')
-            if x.isdigit()
-        ]
-
-    response = render(
-        request,
-        'student/start_exam.html',
-        {
-            'course': course,
-            'questions': questions,
-            'current_question': current_question,
-            'current_no': current_no,
-            'saved_answer': saved_answer,
-            'attempted_questions': attempted_questions,
-        }
-    )
-
-    response.set_cookie('course_id', course.id)
-
+def start_exam_view(request,pk):
+    course=QMODEL.Course.objects.get(id=pk)
+    questions=QMODEL.Question.objects.all().filter(course=course)
+    if request.method=='POST':
+        pass
+    response= render(request,'student/start_exam.html',{'course':course,'questions':questions})
+    response.set_cookie('course_id',course.id)
     return response
+
+
 @login_required(login_url='studentlogin')
 @user_passes_test(is_student)
 def calculate_marks_view(request):
-
-    course_id = request.COOKIES.get('course_id')
-
-    if course_id is not None:
-
-        course = QMODEL.Course.objects.get(id=course_id)
-
-        total_marks = 0
-
-        questions = list(
-            QMODEL.Question.objects.filter(course=course)
-        )
-
-        for question in questions:
-
-            selected_ans = request.COOKIES.get(
-                str(question.id)
-            )
-
-            actual_answer = question.answer
-
+    if request.COOKIES.get('course_id') is not None:
+        course_id = request.COOKIES.get('course_id')
+        course=QMODEL.Course.objects.get(id=course_id)
+        
+        total_marks=0
+        questions=QMODEL.Question.objects.all().filter(course=course)
+        for i in range(len(questions)):
+            
+            selected_ans = request.COOKIES.get(str(i+1))
+            actual_answer = questions[i].answer
             if selected_ans == actual_answer:
-                total_marks += question.marks
-
-        student = models.Student.objects.get(
-            user_id=request.user.id
-        )
-
+                total_marks = total_marks + questions[i].marks
+        student = models.Student.objects.get(user_id=request.user.id)
         result = QMODEL.Result()
-
-        result.marks = total_marks
-        result.exam = course
-        result.student = student
-
+        result.marks=total_marks
+        result.exam=course
+        result.student=student
         result.save()
 
-        return HttpResponseRedirect(
-            reverse('view-result')
-        )
+        return HttpResponseRedirect('view-result')
 
-    return HttpResponseRedirect(
-        reverse('student-exam')
-    )
+
 
 @login_required(login_url='studentlogin')
 @user_passes_test(is_student)
@@ -231,91 +140,4 @@ def check_marks_view(request,pk):
 def student_marks_view(request):
     courses=QMODEL.Course.objects.all()
     return render(request,'student/student_marks.html',{'courses':courses})
-@login_required(login_url='studentlogin')
-@user_passes_test(is_student)
-def student_save_next(request, course_id, question_id):
-
-    course = QMODEL.Course.objects.get(id=course_id)
-
-    questions = list(
-        QMODEL.Question.objects.filter(course=course)
-    )
-
-    current_question = QMODEL.Question.objects.get(
-        id=question_id,
-        course=course
-    )
-
-    if request.method == 'POST':
-
-        selected_answer = request.POST.get('answer')
-        action = request.POST.get('action')
-
-        # Find current question index
-        current_index = 0
-
-        for index, question in enumerate(questions):
-            if question.id == current_question.id:
-                current_index = index
-                break
-
-        # Save answer
-        response = HttpResponseRedirect(
-            reverse('start-exam', args=[course.id])
-        )
-
-        if selected_answer:
-            response.set_cookie(
-                str(current_question.id),
-                selected_answer
-            )
-
-            # Attempted questions
-            attempted_cookie = request.COOKIES.get(
-                'attempted_questions',
-                ''
-            )
-
-            attempted_list = (
-                attempted_cookie.split(',')
-                if attempted_cookie
-                else []
-            )
-
-            if str(current_question.id) not in attempted_list:
-                attempted_list.append(str(current_question.id))
-
-            response.set_cookie(
-                'attempted_questions',
-                ','.join(attempted_list)
-            )
-
-        # Submit Answers
-        if action == 'Submit Answers':
-            response = HttpResponseRedirect(
-                reverse('calculate-marks')
-            )
-            return response
-
-        # Save & Next
-        if action == 'Save & Next':
-
-            if current_index + 1 < len(questions):
-
-                next_question = questions[current_index + 1]
-
-                response.set_cookie(
-                    'current_question',
-                    str(next_question.id)
-                )
-
-            else:
-                response = HttpResponseRedirect(
-                    reverse('calculate-marks')
-                )
-
-        return response
-
-    return HttpResponseRedirect(
-        reverse('start-exam', args=[course.id])
-    )
+  
